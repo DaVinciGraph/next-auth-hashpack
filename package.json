@@ -1,0 +1,26 @@
+{
+  "name": "next-auth-hashpack",
+  "version": "0.1.0",
+  "private": true,
+  "author": {
+    "name": "DavinciGraph",
+    "url": "https://davincigraph.io"
+  },
+  "scripts": {},
+  "peerDependencies": {
+    "@types/node": "^18.14.1",
+    "@types/react": "^18.0.28",
+    "@types/react-dom": "^18.0.11",
+    "next": "^12.2.5 || ^13",
+    "react": "^17.0.2 || ^18",
+    "react-dom": "^17.0.2 || ^18",
+    "next-auth": "^4.19.2"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^2.22.0",
+    "hashconnect": "^0.2.4"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.5"
+  }
+}
