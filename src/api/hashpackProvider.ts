@@ -1,11 +1,33 @@
 import { PublicKey } from "@hashgraph/sdk";
+import { Awaitable, User } from "next-auth";
 import Credentials, { CredentialsConfig } from "next-auth/providers/credentials";
 
+export interface HashpackCredentialInputData {
+    signedPayload?: Uint8Array,
+    userSignature?: Uint8Array,
+    accountId?: string
+}
+
 export interface HashpackOptions {
-    userReturnCallback: Function,
+    userReturnCallback: (credentials: HashpackCredentialInputData) => Awaitable<User | null>,
     publicKey: string,
     mirrorNodeAccountInfoURL?: string,
-    getUserPublicKey?: Function
+    getUserPublicKey?: (accountId: string) => string
+}
+
+export type hashpackCredentialInputs = {
+    signedPayload: {
+        label: string;
+        type: string;
+    };
+    userSignature: {
+        label: string;
+        type: string;
+    };
+    accountId: {
+        label: string;
+        type: string;
+    };
 }
 
 /**
@@ -16,7 +38,7 @@ export interface HashpackOptions {
  * @param mirrorNodeAccountInfoURL  the mirror node api route for  fetching account's info
  * @param getUserPublicKey replace the fetching client user's public key mechanizm
  */
-export const hashpackProvider = ({ userReturnCallback, publicKey, mirrorNodeAccountInfoURL = 'https://testnet.mirrornode.hedera.com/api/v1/accounts', getUserPublicKey }: HashpackOptions) => {
+export const hashpackProvider = ({ userReturnCallback, publicKey, mirrorNodeAccountInfoURL = 'https://testnet.mirrornode.hedera.com/api/v1/accounts', getUserPublicKey }: HashpackOptions): CredentialsConfig<hashpackCredentialInputs> => {
     return Credentials({
         id: "hashpack",
         name: 'Hashpack wallet',
@@ -49,7 +71,7 @@ export const hashpackProvider = ({ userReturnCallback, publicKey, mirrorNodeAcco
 
             let userAccountPublicKey = '';
             if (getUserPublicKey) {
-                userAccountPublicKey = await getUserPublicKey();
+                userAccountPublicKey = await getUserPublicKey(accountId);
             } else {
                 const userAccountInfoResponse = await fetch(`${mirrorNodeAccountInfoURL}/${accountId}`);
                 if (userAccountInfoResponse.ok) {

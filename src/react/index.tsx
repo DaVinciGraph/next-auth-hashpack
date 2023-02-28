@@ -1,8 +1,29 @@
 import { HashConnect } from "hashconnect";
 import { ClientSafeProvider, getCsrfToken, getProviders, signIn, SignInOptions, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
-import { IAuthHashConnectIntegration, IAuthHashPackButton } from "./index.d"
+import { ReactNode, useEffect, useState } from "react";
+
+export type AuthenticationResponse = {
+    success: boolean;
+    error?: string;
+    signedPayload?: object;
+    userSignature?: object;
+};
+
+export interface IAuthHashConnectIntegration {
+    hashconnect: HashConnect,
+    hashconnectTopic: string,
+    pairedAccountId: string,
+    signInOptions?: SignInOptions,
+    authInitializerApiRoute?: string
+}
+
+export interface IAuthHashPackButton extends IAuthHashConnectIntegration {
+    children?: ReactNode,
+    id?: string,
+    className?: string,
+    style?: any
+}
 
 export const useHashpackAuthentication = (hashconnect: HashConnect, hashconnectTopic: string, pairedAccountId: string, singInOptions?: SignInOptions, authInitializerApiRoute?: string) => {
     const [error, setError] = useState('');
@@ -185,7 +206,7 @@ export const ProvidersCard = (props: IAuthHashConnectIntegration) => {
                         signInOptions={signInOptions}
                         authInitializerApiRoute={authInitializerApiRoute} />
                 </div> : <div key={provider.id}>
-                    <button type="submit" onClick={() => signIn(provider.id, { callbackUrl: provider.callbackUrl })}>
+                    <button type="submit" className="next-auth-provider-button" onClick={() => signIn(provider.id, { callbackUrl: provider.callbackUrl })}>
                         <img loading="lazy" id="provider-logo" src={`https://authjs.dev/img/providers/${provider.id}.svg`} width={32} height={32} />
                         <span>Sign in with {provider.name}</span>
                     </button>
@@ -237,7 +258,7 @@ export const SignInSection = (props: IAuthHashConnectIntegration) => {
                     pairedAccountId={pairedAccountId}
                     hashconnectTopic={hashconnectTopic}
                     signInOptions={signInOptions}
-                    authInitializerApiRoute={authInitializerApiRoute}></ProvidersCard>
+                    authInitializerApiRoute={authInitializerApiRoute} />
             </article>
             <style jsx>
                 {`

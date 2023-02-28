@@ -19,7 +19,7 @@ export interface InitializingResponse {
  * @param network {'test' | 'main'} using Hedera's testnet or mainnet
  * @returns {Promise<void>}
  */
-export default async function hashpackAuthInitializer(req: NextApiRequest, res: NextApiResponse, accountId: string, privateKey: PrivateKey | string, data: any, network: 'test' | 'main' = 'test'): Promise<void> {
+export default async function authInitializer(req: NextApiRequest, res: NextApiResponse, accountId: string, privateKey: PrivateKey | string, data: any, network: 'test' | 'main' = 'test'): Promise<void> {
     try {
         if (req.method !== 'POST') {
             res.status(405).send(`Method not allowed.`);
@@ -50,6 +50,6 @@ export default async function hashpackAuthInitializer(req: NextApiRequest, res: 
         res.status(200).send(JSON.stringify(responseDate));
         return;
     } catch (err: any) {
-        res.status(403).send(err.message);
+        res.status(403).send(err?.message ? err.message : "something went wrong. try again");
     }
 }
