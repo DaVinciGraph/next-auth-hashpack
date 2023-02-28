@@ -2,7 +2,6 @@
   "name": "next-auth-hashpack",
   "description": "Authenticate with Hashpack wallet using NextAuthJs library.",
   "version": "0.1.0",
-  "private": true,
   "author": {
     "name": "DaVinciGraph",
     "url": "https://davincigraph.io"
