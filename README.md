@@ -12,6 +12,11 @@ The next-auth-hashpack package is designed to enable NextAuth.js to use Hashpack
 
 <br>
 
+## UI View
+![Authentication Flow](SignInProviders.jpg)
+
+<br>
+
 # The Flow
 
 ![Authentication Flow](AuthWithHashpack.jpg)
