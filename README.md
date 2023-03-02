@@ -26,7 +26,7 @@ The next-auth-hashpack package is designed to enable NextAuth.js to use Hashpack
 
 after configuring next-auth, call `HashpackProvider` in the providers array:
 
-```javascript pages/api/auth/[...nextAuth].ts
+```javascript pages/api/auth/[...nextauth].ts
 NextAuth({
     providers: [
         hashpackProvider({
@@ -50,7 +50,7 @@ NextAuth({
 **userReturnCallback** <br>
 **_`mandatory`_** this callback would be executed when user is authenticated successfully. it gets credentials inputs including user's accountId which can be used to fetch user's data from for example a database.
 
-```javascript pages/api/auth/[...nextAuth].ts
+```javascript pages/api/auth/[...nextauth].ts
 hashpackProvider({
     userReturnCallback: ({signedPayload, userSignature, accountId}) => {}
 })
@@ -71,7 +71,7 @@ hashpackProvider({
 **getUserPublicKey** <br>
 **_`optional`_** if you want to implement your mechanism to get user's account public key, you can pass a callback to this property. you'll get signing-in user account id as the input
 
-```javascript pages/api/auth/[...nextAuth].ts
+```javascript pages/api/auth/[...nextauth].ts
 hashpackProvider({
     getUserPublicKey: (accountId) => {
         return "mechanism to return user's public key"
@@ -116,7 +116,7 @@ the other essential configuration for the next-auth is the sign-in page url. by 
 
 to change the sign-in page url:
 
-```javascript pages/api/[...nextAuth].ts
+```javascript pages/api/[...nextauth].ts
 NextAuth({
     providers: [
         ...
@@ -163,6 +163,8 @@ useHashpackAuthentication(
 default next-auth-hashpack initializer button. it accepts all the useHashpackAuthentication inputs as props and also several props for the styling purposes.
 
 ```javascript
+import { HashpackButton } from "next-auth-hashpack/dist/react";
+
 <HashpackButton
     hashconnect={hashconnect}
     pairedAccountId={pairedAccountId}
@@ -183,6 +185,8 @@ default next-auth-hashpack initializer button. it accepts all the useHashpackAut
 shows hashpack button alongside the other provers for sign in. good for the case which sign-in through several providers is available. e.g: hashpack and google or ...
 
 ```javascript
+import { ProvidersCard } from "next-auth-hashpack/dist/react";
+
 <ProvidersCard hashconnect={hashconnect}
     pairedAccountId={pairedAccountId}
     hashconnectTopic={hashconnectTopic}
@@ -198,6 +202,8 @@ shows hashpack button alongside the other provers for sign in. good for the case
 use this component when you just want a boilerplate default sign-in page.
 
 ```javascript
+import { SignInSection } from "next-auth-hashpack/dist/react";
+
 <SignInSection 
     hashconnect={hashconnect!} 
     hashconnectTopic={topic} 
@@ -211,7 +217,7 @@ use this component when you just want a boilerplate default sign-in page.
 ## changing user structure
 by default next-auth user object just have id, name, email and image properties, which among them a string id is mandatory. but if there is case of extending this object, do as follow:
 
-```javascript /pages/api/auth/[...nextAuth].ts
+```javascript /pages/api/auth/[...nextauth].ts
 ...
     callbacks: {
         async jwt({ token, user, account, profile, isNewUser }: any) {
@@ -236,8 +242,9 @@ this way, the session in the front contains the user properties you want.
 
 
 ## don't forget the jwt secret
+set environment variable `NEXTAUTH_SECRET` or do it in the `[...nextauth].ts`:
 
-```javascript /pages/api/auth/[...nextAuth].ts
+```javascript /pages/api/auth/[...nextauth].ts
 ...
     jwt: {
         secret: "a strong phrase"
