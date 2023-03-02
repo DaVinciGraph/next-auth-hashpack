@@ -33,10 +33,10 @@ export type hashpackCredentialInputs = {
 /**
  * config the credential to be used with hashpack wallet
  * 
- * @param userReturnCallback a callback that return verfied user
+ * @param userReturnCallback a callback that return verified user
  * @param publicKey Server's Hedera account public key
  * @param mirrorNodeAccountInfoURL  the mirror node api route for  fetching account's info
- * @param getUserPublicKey replace the fetching client user's public key mechanizm
+ * @param getUserPublicKey replace the fetching client user's public key mechanism
  */
 export const hashpackProvider = ({ userReturnCallback, publicKey, mirrorNodeAccountInfoURL = 'https://testnet.mirrornode.hedera.com/api/v1/accounts', getUserPublicKey }: HashpackOptions): CredentialsConfig<hashpackCredentialInputs> => {
     return Credentials({
@@ -47,7 +47,7 @@ export const hashpackProvider = ({ userReturnCallback, publicKey, mirrorNodeAcco
             userSignature: { label: '', type: "hidden" },
             accountId: { label: '', type: "hidden" },
         },
-        async authorize(credentials: any, req: any) {
+        async authorize(credentials: any) {
             let { signedPayload, userSignature, accountId } = credentials;
 
             if (!signedPayload || !userSignature || !accountId) {

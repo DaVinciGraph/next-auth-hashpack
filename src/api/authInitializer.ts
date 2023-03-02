@@ -1,4 +1,4 @@
-import { AccountId, Client, PrivateKey, PublicKey } from "@hashgraph/sdk";
+import { AccountId, Client, PrivateKey } from "@hashgraph/sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 import { getCsrfToken } from "next-auth/react";
 
@@ -19,7 +19,7 @@ export interface InitializingResponse {
  * @param network {'test' | 'main'} using Hedera's testnet or mainnet
  * @returns {Promise<void>}
  */
-export default async function authInitializer(req: NextApiRequest, res: NextApiResponse, accountId: string, privateKey: PrivateKey | string, data: any, network: 'test' | 'main' = 'test'): Promise<void> {
+export async function authInitializer(req: NextApiRequest, res: NextApiResponse, accountId: string, privateKey: string, data: any, network: 'test' | 'main' = 'test'): Promise<void> {
     try {
         if (req.method !== 'POST') {
             res.status(405).send(`Method not allowed.`);
@@ -32,14 +32,14 @@ export default async function authInitializer(req: NextApiRequest, res: NextApiR
         }
 
         const client = network === 'test' ? Client.forTestnet() : Client.forMainnet();
-        if (typeof privateKey === 'string') {
-            privateKey = PrivateKey?.fromString(privateKey)
-        }
-        client.setOperator(AccountId.fromString(accountId), privateKey);
+        // if (typeof privateKey === 'string') {
+        const pk = PrivateKey.fromString(privateKey)
+        // }
+        client.setOperator(AccountId.fromString(accountId), pk);
 
         let bytes = new Uint8Array(Buffer.from(JSON.stringify(data)));
 
-        let signature = privateKey.sign(bytes);
+        let signature = pk.sign(bytes);
 
         const responseDate: InitializingResponse = {
             signature: signature,
@@ -51,5 +51,6 @@ export default async function authInitializer(req: NextApiRequest, res: NextApiR
         return;
     } catch (err: any) {
         res.status(403).send(err?.message ? err.message : "something went wrong. try again");
+        return
     }
 }

@@ -10,6 +10,15 @@
     "type": "git",
     "url": "https://github.com/DaVinciGraph/next-auth-hashpack"
   },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./dist/react": "./dist/react/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "Authenticate",
     "next js",
@@ -17,15 +26,15 @@
   ],
   "scripts": {},
   "peerDependencies": {
-    "@types/node": "^18.14.1",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
     "next": "^12.2.5 || ^13",
+    "next-auth": "^4.19.2",
     "react": "^17.0.2 || ^18",
-    "react-dom": "^17.0.2 || ^18",
-    "next-auth": "^4.19.2"
+    "react-dom": "^17.0.2 || ^18"
   },
   "dependencies": {
+    "@emotion/react": "^11.10.6",
     "@hashgraph/sdk": "^2.22.0",
     "hashconnect": "^0.2.4"
   },
