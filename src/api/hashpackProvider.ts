@@ -12,7 +12,8 @@ export interface HashpackOptions {
     userReturnCallback: (credentials: HashpackCredentialInputData) => Awaitable<User | null>,
     publicKey: string,
     mirrorNodeAccountInfoURL?: string,
-    getUserPublicKey?: (accountId: string) => string
+    getUserPublicKey?: (accountId: string) => string,
+    checkOriginalData?: (accountId: string, originalData: any) => boolean
 }
 
 export type hashpackCredentialInputs = {
@@ -38,7 +39,13 @@ export type hashpackCredentialInputs = {
  * @param mirrorNodeAccountInfoURL  the mirror node api route for  fetching account's info
  * @param getUserPublicKey replace the fetching client user's public key mechanism
  */
-export const hashpackProvider = ({ userReturnCallback, publicKey, mirrorNodeAccountInfoURL = 'https://testnet.mirrornode.hedera.com/api/v1/accounts', getUserPublicKey }: HashpackOptions): CredentialsConfig<hashpackCredentialInputs> => {
+export const hashpackProvider = ({
+    userReturnCallback,
+    publicKey,
+    mirrorNodeAccountInfoURL = 'https://testnet.mirrornode.hedera.com/api/v1/accounts',
+    getUserPublicKey,
+    checkOriginalData
+}: HashpackOptions): CredentialsConfig<hashpackCredentialInputs> => {
     return Credentials({
         id: "hashpack",
         name: 'Hashpack wallet',
@@ -54,6 +61,10 @@ export const hashpackProvider = ({ userReturnCallback, publicKey, mirrorNodeAcco
                 throw new Error("unable to process your request")
             }
 
+            if (!isValidHederaAccount(accountId)) {
+                throw new Error("Hedera Account is not valid.");
+            }
+
             try {
                 signedPayload = JSON.parse(signedPayload);
                 userSignature = JSON.parse(userSignature);
@@ -61,11 +72,15 @@ export const hashpackProvider = ({ userReturnCallback, publicKey, mirrorNodeAcco
                 throw new Error("Invalid Signature");
             }
 
-            if (!signedPayload?.originalPayload || !signedPayload.serverSignature) {
+            if (!signedPayload?.originalPayload || !signedPayload?.serverSignature) {
                 throw new Error("Invalid entries");
             }
 
             if (!isUint8ArrayCompatible(signedPayload.serverSignature) || !isUint8ArrayCompatible(userSignature)) {
+                throw new Error("Invalid Signature");
+            }
+
+            if (checkOriginalData && !checkOriginalData(accountId, signedPayload?.originalPayload)) {
                 throw new Error("Invalid Signature");
             }
 
@@ -120,4 +135,9 @@ const isUint8ArrayCompatible = (data: any) => {
     return data.every(function (value) {
         return Number.isInteger(value) && value >= 0 && value <= 255;
     });
+}
+
+function isValidHederaAccount(accountId: string) {
+    const regex = /^(\d{1,10}\.){2}\d{1,10}$/;
+    return regex.test(accountId);
 }

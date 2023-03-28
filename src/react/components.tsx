@@ -3,6 +3,7 @@ import { HashConnect } from "hashconnect";
 import { ClientSafeProvider, getCsrfToken, getProviders, signIn, SignInOptions, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { css } from "@emotion/react";
+import { HashConnectConnectionState } from "hashconnect/dist/esm/types";
 
 
 export type AuthenticationResponse = {
@@ -13,8 +14,9 @@ export type AuthenticationResponse = {
 };
 
 export interface IAuthHashConnectIntegration {
-    hashconnect: HashConnect,
-    hashconnectTopic: string,
+    hashConnect: HashConnect,
+    hashConnectTopic: string,
+    hashConnectState?: HashConnectConnectionState,
     pairedAccountId: string,
     signInOptions?: SignInOptions,
     authInitializerApiRoute?: string
@@ -27,7 +29,7 @@ export interface IAuthHashPackButton extends IAuthHashConnectIntegration {
     style?: any
 }
 
-export const useHashpackAuthentication = (hashconnect: HashConnect, hashconnectTopic: string, pairedAccountId: string, singInOptions?: SignInOptions, authInitializerApiRoute?: string) => {
+export const useHashpackAuthentication = (hashConnect: HashConnect, hashConnectTopic: string, pairedAccountId: string, singInOptions?: SignInOptions, authInitializerApiRoute?: string) => {
     const [error, setError] = React.useState('');
     const router = useRouter();
     const authenticate = async (ApiRouteUrl = authInitializerApiRoute ? authInitializerApiRoute : `/api/auth/hashpack`) => {
@@ -46,7 +48,7 @@ export const useHashpackAuthentication = (hashconnect: HashConnect, hashconnectT
 
                 const editedSignature = Uint8Array.from(Object.values(signature));
 
-                let authenticationResponse = await hashconnect.authenticate(hashconnectTopic, pairedAccountId, serverSigningAccount, editedSignature, payload);
+                let authenticationResponse = await hashConnect.authenticate(hashConnectTopic, pairedAccountId, serverSigningAccount, editedSignature, payload);
 
                 if (!authenticationResponse.success) {
                     throw new Error("Hashpack wallet failed to authenticate");
@@ -96,20 +98,15 @@ export const useHashpackAuthentication = (hashconnect: HashConnect, hashconnectT
 
 
 export const HashpackButton = (props: IAuthHashPackButton) => {
-    const { hashconnect, hashconnectTopic, pairedAccountId, children, signInOptions, authInitializerApiRoute } = props;
-    const { authenticate, error } = useHashpackAuthentication(hashconnect, hashconnectTopic, pairedAccountId, signInOptions!, authInitializerApiRoute);
+    const { hashConnect, hashConnectTopic, hashConnectState, pairedAccountId, children, signInOptions, authInitializerApiRoute } = props;
+    const { authenticate, error } = useHashpackAuthentication(hashConnect, hashConnectTopic, pairedAccountId, signInOptions!, authInitializerApiRoute);
 
-    const [hashconnectState, setHashconnectState] = React.useState(hashconnect.status);
     const [pairedHere, setPairedHere] = React.useState(false);
 
-    hashconnect.connectionStatusChangeEvent.on((status: any) => {
-        setHashconnectState(status);
-    });
-
     const initializeHashpackAuthentication = async () => {
-        if (hashconnectState !== 'Paired') {
+        if (hashConnectState !== 'Paired') {
             setPairedHere(true);
-            hashconnect.connectToLocalWallet();
+            hashConnect.connectToLocalWallet();
             return;
         } else {
             setPairedHere(false);
@@ -119,17 +116,13 @@ export const HashpackButton = (props: IAuthHashPackButton) => {
     }
 
     React.useEffect(() => {
-        console.log(children)
-    }, [])
-
-    React.useEffect(() => {
-        if (hashconnectState === 'Paired' && pairedHere) authenticate();
-    }, [hashconnectState]);
+        if (hashConnectState === 'Paired' && pairedHere) authenticate();
+    }, [hashConnectState]);
 
     return <>
         <span><button
             onClick={initializeHashpackAuthentication}
-            disabled={hashconnectState === 'Disconnected'}
+            disabled={hashConnectState === 'Disconnected'}
             className={`${props?.className && props.className}`}
             css={css`
             background-color: #525298;
@@ -167,7 +160,7 @@ export const HashpackButton = (props: IAuthHashPackButton) => {
 }
 
 export const ProvidersCard = (props: IAuthHashConnectIntegration) => {
-    const { hashconnect, hashconnectTopic, pairedAccountId, signInOptions, authInitializerApiRoute } = props;
+    const { hashConnect, hashConnectTopic, hashConnectState, pairedAccountId, signInOptions, authInitializerApiRoute } = props;
     const [providers, setProviders] = React.useState<ClientSafeProvider[]>([]);
 
     const init = async () => {
@@ -187,9 +180,10 @@ export const ProvidersCard = (props: IAuthHashConnectIntegration) => {
             Array.isArray(providers) && providers.map((provider: any) => {
                 return provider.id === 'hashpack' ? <div key={provider.id}>
                     <HashpackButton
-                        hashconnect={hashconnect}
+                        hashConnect={hashConnect}
                         pairedAccountId={pairedAccountId}
-                        hashconnectTopic={hashconnectTopic}
+                        hashConnectTopic={hashConnectTopic}
+                        hashConnectState={hashConnectState}
                         signInOptions={signInOptions}
                         authInitializerApiRoute={authInitializerApiRoute} />
                 </div> : <div key={provider.id}>
@@ -224,7 +218,7 @@ export const ProvidersCard = (props: IAuthHashConnectIntegration) => {
 
 
 export const SignInSection = (props: IAuthHashConnectIntegration) => {
-    const { hashconnect, hashconnectTopic, pairedAccountId, signInOptions, authInitializerApiRoute } = props;
+    const { hashConnect, hashConnectTopic, hashConnectState, pairedAccountId, signInOptions, authInitializerApiRoute } = props;
     const router = useRouter();
     const { status: sessionStatus } = useSession();
 
@@ -250,9 +244,10 @@ export const SignInSection = (props: IAuthHashConnectIntegration) => {
                     fontSize: '24pt',
                     fontFamily: 'tahoma',
                 }}>Sign In</h1>
-                <ProvidersCard hashconnect={hashconnect}
+                <ProvidersCard hashConnect={hashConnect}
                     pairedAccountId={pairedAccountId}
-                    hashconnectTopic={hashconnectTopic}
+                    hashConnectState={hashConnectState}
+                    hashConnectTopic={hashConnectTopic}
                     signInOptions={signInOptions}
                     authInitializerApiRoute={authInitializerApiRoute} />
             </article>
