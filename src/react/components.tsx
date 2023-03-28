@@ -41,7 +41,10 @@ export const useHashpackAuthentication = (hashConnect: HashConnect, hashConnectT
                 body: JSON.stringify({
                     csrfToken: csrfToken,
                     accountId: pairedAccountId
-                })
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
 
             if (transactionResponse.status === 200) {
