@@ -39,7 +39,8 @@ export const useHashpackAuthentication = (hashConnect: HashConnect, hashConnectT
             const transactionResponse = await fetch(ApiRouteUrl, {
                 method: "POST",
                 body: JSON.stringify({
-                    csrfToken: csrfToken
+                    csrfToken: csrfToken,
+                    accountId: pairedAccountId
                 })
             });
 

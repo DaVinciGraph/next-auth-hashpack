@@ -1,6 +1,7 @@
 import { AccountId, Client, PrivateKey } from "@hashgraph/sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 import { getCsrfToken } from "next-auth/react";
+import { isValidHederaAccount } from "./hashpackProvider";
 
 
 export interface InitializingResponse {
@@ -13,17 +14,20 @@ export interface InitializingResponse {
  * call this function from a route that spouse to initiate the authentication with hashpack wallet. it signs a data and pass it to client.
  * @param req {NextApiRequest} 
  * @param res {NextApiResponse}
- * @param accountId {string} Sever's account Id on Hedera Hashgraph network
- * @param privateKey {PrivateKey} Server's account private key on Hedera Hashgraph
+ * @param ServerAccountId {string} Sever's account Id on Hedera Hashgraph network
+ * @param ServerPrivateKey {PrivateKey} Server's account private key on Hedera Hashgraph
  * @param data {any} the data you are going to sign
- * @param network {'test' | 'main'} using Hedera's testnet or mainnet
+ * @param network {'testnet' | 'mainnet'} using Hedera's testnet or mainnet
  * @returns {Promise<void>}
  */
-export async function authInitializer(req: NextApiRequest, res: NextApiResponse, accountId: string, privateKey: string, data: any, network: 'test' | 'main' = 'test'): Promise<void> {
+export async function authInitializer(req: NextApiRequest, res: NextApiResponse, ServerAccountId: string, ServerPrivateKey: string, data: any, network: "testnet" | "mainnet" = "testnet"): Promise<void> {
     try {
         if (req.method !== 'POST') {
-            res.status(405).send(`Method not allowed.`);
-            return;
+            return res.status(405).send(`Method not allowed.`);
+        }
+
+        if (!req.body?.accountId || !isValidHederaAccount(req.body?.accountId)) {
+            throw new Error("Invalid hedera account ID.");
         }
 
         const csrfToken = await getCsrfToken({ req });
@@ -31,11 +35,11 @@ export async function authInitializer(req: NextApiRequest, res: NextApiResponse,
             throw new Error("Invalid token");
         }
 
-        const client = network === 'test' ? Client.forTestnet() : Client.forMainnet();
+        const client = network === 'testnet' ? Client.forTestnet() : Client.forMainnet();
         // if (typeof privateKey === 'string') {
-        const pk = PrivateKey.fromString(privateKey)
+        const pk = PrivateKey.fromString(ServerPrivateKey)
         // }
-        client.setOperator(AccountId.fromString(accountId), pk);
+        client.setOperator(AccountId.fromString(ServerAccountId), pk);
 
         let bytes = new Uint8Array(Buffer.from(JSON.stringify(data)));
 
@@ -43,14 +47,12 @@ export async function authInitializer(req: NextApiRequest, res: NextApiResponse,
 
         const responseDate: InitializingResponse = {
             signature: signature,
-            serverSigningAccount: accountId,
+            serverSigningAccount: ServerAccountId,
             payload: data
         }
 
-        res.status(200).send(JSON.stringify(responseDate));
-        return;
+        return res.status(200).send(JSON.stringify(responseDate));
     } catch (err: any) {
-        res.status(403).send(err?.message ? err.message : "something went wrong. try again");
-        return
+        return res.status(403).send(err?.message ? err.message : "something went wrong. try again");
     }
 }

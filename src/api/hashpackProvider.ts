@@ -137,7 +137,7 @@ const isUint8ArrayCompatible = (data: any) => {
     });
 }
 
-function isValidHederaAccount(accountId: string) {
+export function isValidHederaAccount(accountId: string) {
     const regex = /^(\d{1,10}\.){2}\d{1,10}$/;
     return regex.test(accountId);
 }
