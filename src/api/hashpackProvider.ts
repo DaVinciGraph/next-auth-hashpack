@@ -13,7 +13,7 @@ export interface HashpackOptions {
     publicKey: string,
     mirrorNodeAccountInfoURL?: string,
     getUserPublicKey?: (accountId: string) => string,
-    checkOriginalData?: (accountId: string, originalData: any) => boolean
+    checkOriginalData?: (accountId: string, originalData: any) => boolean | Promise<boolean>
 }
 
 export type hashpackCredentialInputs = {
@@ -38,6 +38,7 @@ export type hashpackCredentialInputs = {
  * @param publicKey Server's Hedera account public key
  * @param mirrorNodeAccountInfoURL  the mirror node api route for  fetching account's info
  * @param getUserPublicKey replace the fetching client user's public key mechanism
+ * @param checkOriginalData check the original data
  */
 export const hashpackProvider = ({
     userReturnCallback,
