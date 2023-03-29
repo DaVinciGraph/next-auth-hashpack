@@ -125,10 +125,14 @@ export default async function hashpack(req: NextApiRequest, res: NextApiResponse
         token: "a randomly generated token"
     };
 
-    // you receive user's account Id in the request | req.body.accountId
-    // optionally you can store the data and user's accountId and late check the validity of original data using checkOriginalData
+    // optionally you can define a preInitializingCallback and give it to authInitializer.
+    // after validation of user's account ID, preInitializingCallback would receive it
+    const preInitializingCallback = (accountId) => {
+        // logic: e.g. store the accountId and data in the database
+    }
 
-    authInitializer(req, res, accountId, privateKey, data, "testnet");
+    // return whatever authInitializer return to to prevent stale requests
+    return authInitializer(req, res, accountId, privateKey, data, "testnet", preInitializingCallback);
     // the final argument is hedera network, and it accepts either testnet or mainnet
 }
 ```

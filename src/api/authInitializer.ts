@@ -10,6 +10,8 @@ export interface InitializingResponse {
     payload: any
 }
 
+type PreInitializingCallback = (accountId: string, data?: any) => void;
+
 /**
  * call this function from a route that spouse to initiate the authentication with hashpack wallet. it signs a data and pass it to client.
  * @param req {NextApiRequest} 
@@ -18,9 +20,10 @@ export interface InitializingResponse {
  * @param ServerPrivateKey {PrivateKey} Server's account private key on Hedera Hashgraph
  * @param data {any} the data you are going to sign
  * @param network {'testnet' | 'mainnet'} using Hedera's testnet or mainnet
+ * @param preInitializingCallback runs after validation, receives accountId and optionally original data
  * @returns {Promise<void>}
  */
-export async function authInitializer(req: NextApiRequest, res: NextApiResponse, ServerAccountId: string, ServerPrivateKey: string, data: any, network: "testnet" | "mainnet" = "testnet"): Promise<void> {
+export async function authInitializer(req: NextApiRequest, res: NextApiResponse, ServerAccountId: string, ServerPrivateKey: string, data: any, network: "testnet" | "mainnet" = "testnet", preInitializingCallback?: PreInitializingCallback): Promise<void> {
     try {
         if (req.method !== 'POST') {
             return res.status(405).send(`Method not allowed.`);
@@ -33,6 +36,10 @@ export async function authInitializer(req: NextApiRequest, res: NextApiResponse,
         const csrfToken = await getCsrfToken({ req });
         if (!csrfToken || req.cookies['next-auth.csrf-token']?.split('|')?.[0] !== csrfToken) {
             throw new Error("Invalid token");
+        }
+
+        if (preInitializingCallback) {
+            await preInitializingCallback(req.body.accountId)
         }
 
         const client = network === 'testnet' ? Client.forTestnet() : Client.forMainnet();
@@ -56,3 +63,4 @@ export async function authInitializer(req: NextApiRequest, res: NextApiResponse,
         return res.status(403).send(err?.message ? err.message : "something went wrong. try again");
     }
 }
+
