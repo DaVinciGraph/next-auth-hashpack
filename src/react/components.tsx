@@ -15,6 +15,7 @@ export type AuthenticationResponse = {
 
 export interface IAuthHashConnectIntegration {
     hashConnect: HashConnect,
+    network: HederaNetworkType,
     hashConnectTopic: string,
     hashConnectState?: HashConnectConnectionState,
     pairedAccountId: string,
@@ -29,7 +30,18 @@ export interface IAuthHashPackButton extends IAuthHashConnectIntegration {
     style?: any
 }
 
-export const useHashpackAuthentication = (hashConnect: HashConnect, hashConnectTopic: string, pairedAccountId: string, singInOptions?: SignInOptions, authInitializerApiRoute?: string) => {
+type HederaNetworkType = 'mainnet' | 'testnet' | 'previewnet'
+
+interface IHashpackAuthenticationHookProps {
+    hashConnect: HashConnect
+    network: HederaNetworkType
+    hashConnectTopic: string
+    pairedAccountId: string
+    signInOptions?: SignInOptions
+    authInitializerApiRoute?: string
+}
+
+export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTopic, pairedAccountId, signInOptions, authInitializerApiRoute }: IHashpackAuthenticationHookProps) => {
     const [error, setError] = React.useState('');
     const router = useRouter();
     const authenticate = async (ApiRouteUrl = authInitializerApiRoute ? authInitializerApiRoute : `/api/auth/hashpack`) => {
@@ -40,7 +52,8 @@ export const useHashpackAuthentication = (hashConnect: HashConnect, hashConnectT
                 method: "POST",
                 body: JSON.stringify({
                     csrfToken: csrfToken,
-                    accountId: pairedAccountId
+                    accountId: pairedAccountId,
+                    network: network
                 }),
                 headers: {
                     'Content-Type': 'application/json'
@@ -81,17 +94,18 @@ export const useHashpackAuthentication = (hashConnect: HashConnect, hashConnectT
 
     const sign = async (authenticationResponse: any) => {
         const signInResponse = await signIn("hashpack", {
+            network: network,
             accountId: pairedAccountId,
             signedPayload: JSON.stringify(authenticationResponse.signedPayload),
             userSignature: JSON.stringify(authenticationResponse.userSignature),
             redirect: false,
             json: true,
-            ...singInOptions
+            ...signInOptions
         });
 
         if (signInResponse?.ok) {
-            if (singInOptions?.callbackUrl)
-                router.push(singInOptions?.callbackUrl);
+            if (signInOptions?.callbackUrl)
+                router.push(signInOptions?.callbackUrl);
         } else {
             setError(signInResponse?.error as string);
         }
@@ -102,8 +116,8 @@ export const useHashpackAuthentication = (hashConnect: HashConnect, hashConnectT
 
 
 export const HashpackButton = (props: IAuthHashPackButton) => {
-    const { hashConnect, hashConnectTopic, hashConnectState, pairedAccountId, children, signInOptions, authInitializerApiRoute } = props;
-    const { authenticate, error } = useHashpackAuthentication(hashConnect, hashConnectTopic, pairedAccountId, signInOptions!, authInitializerApiRoute);
+    const { hashConnect, network, hashConnectTopic, hashConnectState, pairedAccountId, children, signInOptions, authInitializerApiRoute } = props;
+    const { authenticate, error } = useHashpackAuthentication({ hashConnect, network, hashConnectTopic, pairedAccountId, signInOptions: signInOptions!, authInitializerApiRoute });
 
     const [pairedHere, setPairedHere] = React.useState(false);
 
@@ -164,7 +178,7 @@ export const HashpackButton = (props: IAuthHashPackButton) => {
 }
 
 export const ProvidersCard = (props: IAuthHashConnectIntegration) => {
-    const { hashConnect, hashConnectTopic, hashConnectState, pairedAccountId, signInOptions, authInitializerApiRoute } = props;
+    const { hashConnect, network, hashConnectTopic, hashConnectState, pairedAccountId, signInOptions, authInitializerApiRoute } = props;
     const [providers, setProviders] = React.useState<ClientSafeProvider[]>([]);
 
     const init = async () => {
@@ -185,6 +199,7 @@ export const ProvidersCard = (props: IAuthHashConnectIntegration) => {
                 return provider.id === 'hashpack' ? <div key={provider.id}>
                     <HashpackButton
                         hashConnect={hashConnect}
+                        network={network}
                         pairedAccountId={pairedAccountId}
                         hashConnectTopic={hashConnectTopic}
                         hashConnectState={hashConnectState}
@@ -222,7 +237,7 @@ export const ProvidersCard = (props: IAuthHashConnectIntegration) => {
 
 
 export const SignInSection = (props: IAuthHashConnectIntegration) => {
-    const { hashConnect, hashConnectTopic, hashConnectState, pairedAccountId, signInOptions, authInitializerApiRoute } = props;
+    const { hashConnect, network, hashConnectTopic, hashConnectState, pairedAccountId, signInOptions, authInitializerApiRoute } = props;
     const router = useRouter();
     const { status: sessionStatus } = useSession();
 
@@ -248,7 +263,9 @@ export const SignInSection = (props: IAuthHashConnectIntegration) => {
                     fontSize: '24pt',
                     fontFamily: 'tahoma',
                 }}>Sign In</h1>
-                <ProvidersCard hashConnect={hashConnect}
+                <ProvidersCard
+                    hashConnect={hashConnect}
+                    network={network}
                     pairedAccountId={pairedAccountId}
                     hashConnectState={hashConnectState}
                     hashConnectTopic={hashConnectTopic}

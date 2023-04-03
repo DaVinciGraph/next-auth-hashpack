@@ -2,18 +2,35 @@ import { PublicKey } from "@hashgraph/sdk";
 import { Awaitable, User } from "next-auth";
 import Credentials, { CredentialsConfig } from "next-auth/providers/credentials";
 
+export type HederaNetworkType = 'mainnet' | 'testnet' | 'previewnet'
+
 export interface HashpackCredentialInputData {
     signedPayload?: Uint8Array,
     userSignature?: Uint8Array,
     accountId?: string
+    network?: HederaNetworkType
+}
+
+interface IGetUserPublicKey {
+    accountId: string,
+    network: HederaNetworkType
+}
+
+interface ICheckOriginalData {
+    accountId: string
+    network: HederaNetworkType
+    originalData: any
 }
 
 export interface HashpackOptions {
     userReturnCallback: (credentials: HashpackCredentialInputData) => Awaitable<User | null>,
     publicKey: string,
-    mirrorNodeAccountInfoURL?: string,
-    getUserPublicKey?: (accountId: string) => string,
-    checkOriginalData?: (accountId: string, originalData: any) => boolean | Promise<boolean>
+    mirrorNodeAccountInfoURL?: {
+        testnet: string,
+        mainnet: string,
+    },
+    getUserPublicKey?: ({ accountId, network }: IGetUserPublicKey) => string | Promise<string>,
+    checkOriginalData?: ({ accountId, network, originalData }: ICheckOriginalData) => boolean | Promise<boolean>
 }
 
 export type hashpackCredentialInputs = {
@@ -26,6 +43,10 @@ export type hashpackCredentialInputs = {
         type: string;
     };
     accountId: {
+        label: string;
+        type: string;
+    };
+    network: {
         label: string;
         type: string;
     };
@@ -43,7 +64,10 @@ export type hashpackCredentialInputs = {
 export const hashpackProvider = ({
     userReturnCallback,
     publicKey,
-    mirrorNodeAccountInfoURL = 'https://testnet.mirrornode.hedera.com/api/v1/accounts',
+    mirrorNodeAccountInfoURL = {
+        testnet: 'https://testnet.mirrornode.hedera.com/api/v1/accounts',
+        mainnet: 'https://mainnet-public.mirrornode.hedera.com/api/v1/accounts'
+    },
     getUserPublicKey,
     checkOriginalData
 }: HashpackOptions): CredentialsConfig<hashpackCredentialInputs> => {
@@ -54,16 +78,21 @@ export const hashpackProvider = ({
             signedPayload: { label: '', type: "hidden" },
             userSignature: { label: '', type: "hidden" },
             accountId: { label: '', type: "hidden" },
+            network: { label: '', type: "hidden" },
         },
         async authorize(credentials: any) {
-            let { signedPayload, userSignature, accountId } = credentials;
+            let { signedPayload, userSignature, accountId, network } = credentials;
 
-            if (!signedPayload || !userSignature || !accountId) {
+            if (!signedPayload || !userSignature || !accountId || !network) {
                 throw new Error("unable to process your request")
             }
 
             if (!isValidHederaAccount(accountId)) {
                 throw new Error("Hedera Account is not valid.");
+            }
+
+            if (network !== 'mainnet' && network !== 'testnet' && network !== 'previewnet') {
+                throw new Error("Hedera network is incorrect.");
             }
 
             try {
@@ -81,15 +110,15 @@ export const hashpackProvider = ({
                 throw new Error("Invalid Signature");
             }
 
-            if (checkOriginalData && !checkOriginalData(accountId, signedPayload?.originalPayload)) {
+            if (checkOriginalData && !checkOriginalData({ accountId, network, originalData: signedPayload?.originalPayload })) {
                 throw new Error("Invalid Signature");
             }
 
             let userAccountPublicKey = '';
             if (getUserPublicKey) {
-                userAccountPublicKey = await getUserPublicKey(accountId);
+                userAccountPublicKey = await getUserPublicKey({ accountId, network });
             } else {
-                const userAccountInfoResponse = await fetch(`${mirrorNodeAccountInfoURL}/${accountId}`);
+                const userAccountInfoResponse = await fetch(`${mirrorNodeAccountInfoURL[network]}/${accountId}`);
                 if (userAccountInfoResponse.ok) {
                     const responseData = await userAccountInfoResponse.json();
                     userAccountPublicKey = responseData?.key?.key;

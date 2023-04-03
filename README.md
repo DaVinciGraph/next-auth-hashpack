@@ -35,16 +35,19 @@ after configuring next-auth, call `HashpackProvider` in the providers array:
 NextAuth({
     providers: [
         hashpackProvider({
-            userReturnCallback: ({ accountId }) => {
+            userReturnCallback: ({ accountId, network }) => {
                 return { id: "DavinciGraph", accountId: accountId }
             },
             publicKey: "ServerAccountPublicKey",
-            mirrorNodeAccountInfoURL: "...",
-            getUserPublicKey: (accountId) => {
+            mirrorNodeAccountInfoURL: {
+                testnet: 'https://testnet.mirrornode.hedera.com/api/v1/accounts',
+                mainnet: 'https://mainnet-public.mirrornode.hedera.com/api/v1/accounts'
+            },
+            getUserPublicKey: ({accountId, network}) => {
                 "mechanism to return user's public key"
                 return "UserPublicKey";
             },
-            checkOriginalData: (accountId, originalData) => {
+            checkOriginalData: ({accountId, originalData, network}) => {
                 "check the originData you had sent to the user to sign with an external source like database"
                 return true;
             }
@@ -63,7 +66,7 @@ NextAuth({
 ```javascript pages/api/auth/[...nextauth].ts
 hashpackProvider({
     ...
-    userReturnCallback: ({signedPayload, userSignature, accountId}) => {}
+    userReturnCallback: ({signedPayload, userSignature, accountId, network}) => {}
 })
 ```
 
@@ -75,7 +78,7 @@ hashpackProvider({
 <br>
 
 **mirrorNodeAccountInfoURL** <br>
-**_`optional for development`_** by default this package send an http request to hedera public mirror node to get the signing-in user public key so to verify the signed data. but it's only provided in for the testnet, so for the production you must give the mainnet url manually. <br>eg: `https://mainnet-public.mirrornode.hedera.com/api/v1/accounts/`
+**_`optional for development`_** after version 1.0.6 you must define this variable as an object with two properties `tesetnet` and `mainnet` which both are urls pointing to a mirror node to get an account information. If left empty default urls are the public mirror nodes.
 
 <br>
 
@@ -85,7 +88,7 @@ hashpackProvider({
 ```javascript pages/api/auth/[...nextauth].ts
 hashpackProvider({
     ...
-    getUserPublicKey: (accountId) => {
+    getUserPublicKey: ({accountId, network}) => {
         return "mechanism to return user's public key"
     }
 })
@@ -99,7 +102,7 @@ hashpackProvider({
 ```javascript pages/api/auth/[...nextauth].ts
 hashpackProvider({
     ...
-    checkOriginalData: (accountId, originalData) => {
+    checkOriginalData: ({accountId, originalData, network}) => {
         "check the originData you had sent to the user to sign with an external source like database"
         return true;
     }
@@ -143,6 +146,8 @@ as you see, `authInitializer` requires the route `request` and `response`, serve
 
 > 💡 the `pages/api/auth/hashpack.ts` path is not mandatory and the route can be created anywhere needed, the client knows about it in a way which would be explained in the following.
 
+> 💡 the request contains `network` in its body object.
+
 <br>
 
 ### Sign-in page
@@ -171,7 +176,7 @@ The previous functionalities described are responsible for handling the authenti
 <br>
 
 ## **hashConnect**
-To connect to hashpack at any time, we must instantiate HashConnect and hold some of its properties as states. next-auth-hashpack requires 3 entries to interact with hashpack. the `hashConnect instance`, `hashConnect topic`, `hashConnect state`, and the state holding the paired or to-be-paired user's `account id`.
+To connect to hashpack at any time, we must instantiate HashConnect and hold some of its properties as states. next-auth-hashpack requires 3 entries to interact with hashpack. the `hashConnect instance`, `hedera network`, `hashConnect topic`, `hashConnect state`, and the state holding the paired or to-be-paired user's `account id`.
 
 > 💡 Notice that another prerequisite is to have next-auth session context set up.
 
@@ -182,6 +187,7 @@ returns `authenticate` function & `error` state. when `authenticate` function is
 ```javascript 
 useHashpackAuthentication(
     hashConnect, // the hashConnect instance 
+    network
     hashConnectTopic, // hashConnect's connection topic state
     pairedAccountId, // paired or to be paired account id state
     singInOptions, // Optional - next-auth sign-in options
@@ -201,6 +207,7 @@ import { HashpackButton } from "next-auth-hashpack/dist/react";
 
 <HashpackButton
     hashConnect={hashConnect}
+    network={network}
     hashConnectTopic={hashConnectTopic}
     hashConnectState={hashConnectState}
     pairedAccountId={pairedAccountId}
@@ -218,6 +225,7 @@ the content of the button also can be replace.
 import { HashpackButton } from "next-auth-hashpack/dist/react";
  <HashpackButton
     hashConnect={hashConnect}
+    network={network}
     hashConnectTopic={hashConnectTopic}
     hashConnectState={hashConnectState}
     pairedAccountId={pairedAccountId}
@@ -241,6 +249,7 @@ import { ProvidersCard } from "next-auth-hashpack/dist/react";
 
 <ProvidersCard 
     hashConnect={hashConnect}
+    network={network}
     hashConnectTopic={hashConnectTopic}
     hashConnectState={hashConnectState}
     pairedAccountId={pairedAccountId}
@@ -260,6 +269,7 @@ import { SignInSection } from "next-auth-hashpack/dist/react";
 
 <SignInSection 
     hashConnect={hashConnect!} 
+    network={network}
     hashConnectTopic={hashConnectTopic} 
     hashConnectState={hashConnectState} 
     pairedAccountId={pairingData?.accountIds[0]!}

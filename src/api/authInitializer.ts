@@ -1,7 +1,7 @@
 import { AccountId, Client, PrivateKey } from "@hashgraph/sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 import { getCsrfToken } from "next-auth/react";
-import { isValidHederaAccount } from "./hashpackProvider";
+import { HederaNetworkType, isValidHederaAccount } from "./hashpackProvider";
 
 
 export interface InitializingResponse {
@@ -10,7 +10,13 @@ export interface InitializingResponse {
     payload: any
 }
 
-type PreInitializingCallback = (accountId: string, data?: any) => void;
+interface IPreInitializingCallback {
+    network: HederaNetworkType
+    accountId: string
+    data?: any
+}
+
+type PreInitializingCallback = ({ network, accountId, data }: IPreInitializingCallback) => void;
 
 /**
  * call this function from a route that spouse to initiate the authentication with hashpack wallet. it signs a data and pass it to client.
@@ -39,7 +45,7 @@ export async function authInitializer(req: NextApiRequest, res: NextApiResponse,
         }
 
         if (preInitializingCallback) {
-            await preInitializingCallback(req.body.accountId)
+            await preInitializingCallback({ accountId: req.body.accountId, network, data })
         }
 
         const client = network === 'testnet' ? Client.forTestnet() : Client.forMainnet();
@@ -55,7 +61,7 @@ export async function authInitializer(req: NextApiRequest, res: NextApiResponse,
         const responseDate: InitializingResponse = {
             signature: signature,
             serverSigningAccount: ServerAccountId,
-            payload: data
+            payload: data,
         }
 
         return res.status(200).send(JSON.stringify(responseDate));
