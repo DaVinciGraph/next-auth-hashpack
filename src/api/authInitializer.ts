@@ -10,13 +10,13 @@ export interface InitializingResponse {
     payload: any
 }
 
-interface IPreInitializingCallback {
+export interface IPreInitializingCallback {
     network: HederaNetworkType
     accountId: string
     data?: any
 }
 
-type PreInitializingCallback = ({ network, accountId, data }: IPreInitializingCallback) => void;
+export type PreInitializingCallback = ({ network, accountId, data }: IPreInitializingCallback) => void;
 
 /**
  * call this function from a route that spouse to initiate the authentication with hashpack wallet. it signs a data and pass it to client.

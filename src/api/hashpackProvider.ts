@@ -11,12 +11,12 @@ export interface HashpackCredentialInputData {
     network?: HederaNetworkType
 }
 
-interface IGetUserPublicKey {
+export interface IGetUserPublicKey {
     accountId: string,
     network: HederaNetworkType
 }
 
-interface ICheckOriginalData {
+export interface ICheckOriginalData {
     accountId: string
     network: HederaNetworkType
     originalData: any
