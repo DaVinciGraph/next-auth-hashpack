@@ -28,6 +28,7 @@ export interface HashpackOptions {
     mirrorNodeAccountInfoURL?: {
         testnet: string,
         mainnet: string,
+        previewnet: string
     },
     getUserPublicKey?: ({ accountId, network }: IGetUserPublicKey) => string | Promise<string>,
     checkOriginalData?: ({ accountId, network, originalData }: ICheckOriginalData) => boolean | Promise<boolean>
@@ -66,7 +67,8 @@ export const hashpackProvider = ({
     publicKey,
     mirrorNodeAccountInfoURL = {
         testnet: 'https://testnet.mirrornode.hedera.com/api/v1/accounts',
-        mainnet: 'https://mainnet-public.mirrornode.hedera.com/api/v1/accounts'
+        mainnet: 'https://mainnet-public.mirrornode.hedera.com/api/v1/accounts',
+        previewnet: ""
     },
     getUserPublicKey,
     checkOriginalData

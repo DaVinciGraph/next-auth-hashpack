@@ -25,11 +25,11 @@ type PreInitializingCallback = ({ network, accountId, data }: IPreInitializingCa
  * @param ServerAccountId {string} Sever's account Id on Hedera Hashgraph network
  * @param ServerPrivateKey {PrivateKey} Server's account private key on Hedera Hashgraph
  * @param data {any} the data you are going to sign
- * @param network {'testnet' | 'mainnet'} using Hedera's testnet or mainnet
+ * @param network {'testnet' | 'mainnet' | previewnet} using Hedera's testnet or mainnet
  * @param preInitializingCallback runs after validation, receives accountId and optionally original data
  * @returns {Promise<void>}
  */
-export async function authInitializer(req: NextApiRequest, res: NextApiResponse, ServerAccountId: string, ServerPrivateKey: string, data: any, network: "testnet" | "mainnet" = "testnet", preInitializingCallback?: PreInitializingCallback): Promise<void> {
+export async function authInitializer(req: NextApiRequest, res: NextApiResponse, ServerAccountId: string, ServerPrivateKey: string, data: any, network: HederaNetworkType = "testnet", preInitializingCallback?: PreInitializingCallback): Promise<void> {
     try {
         if (req.method !== 'POST') {
             return res.status(405).send(`Method not allowed.`);
