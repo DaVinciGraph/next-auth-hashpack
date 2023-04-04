@@ -1,6 +1,5 @@
 import { AccountId, Client, PrivateKey } from "@hashgraph/sdk";
 import { NextApiRequest, NextApiResponse } from "next";
-import { getCsrfToken } from "next-auth/react";
 import { HederaNetworkType, isValidHederaAccount } from "./hashpackProvider";
 
 
@@ -39,7 +38,7 @@ export async function authInitializer(req: NextApiRequest, res: NextApiResponse,
             throw new Error("Invalid hedera account ID.");
         }
 
-        const csrfToken = await getCsrfToken({ req });
+        const csrfToken = req.headers['x-csrf-token'];
         if (!csrfToken || req.cookies['next-auth.csrf-token']?.split('|')?.[0] !== csrfToken) {
             throw new Error("Invalid token");
         }

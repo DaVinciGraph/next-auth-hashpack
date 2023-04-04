@@ -51,12 +51,12 @@ export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTop
             const transactionResponse = await fetch(ApiRouteUrl, {
                 method: "POST",
                 body: JSON.stringify({
-                    csrfToken: csrfToken,
                     accountId: pairedAccountId,
                     network: network
                 }),
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken!,
                 }
             });
 
