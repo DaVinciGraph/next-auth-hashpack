@@ -35,7 +35,7 @@ after configuring next-auth, call `HashpackProvider` in the providers array:
 NextAuth({
     providers: [
         hashpackProvider({
-            userReturnCallback: ({ accountId, network }) => {
+            userReturnCallback: ({ accountId, network }, userPublicKey) => {
                 return { id: "DavinciGraph", accountId: accountId }
             },
             publicKey: "ServerAccountPublicKey",
@@ -61,12 +61,12 @@ NextAuth({
 ### __hashpackProvider Options__
 
 **userReturnCallback** <br>
-**_`mandatory`_** this callback would be executed when user is authenticated successfully. it gets credentials inputs including user's accountId which can be used to fetch user's data from for example a database.
+**_`mandatory`_** this callback would be executed when user is authenticated successfully. it gets credentials inputs including user's accountId which can be used to fetch user's data from for example a database, and userPublicKey.
 
 ```javascript pages/api/auth/[...nextauth].ts
 hashpackProvider({
     ...
-    userReturnCallback: ({signedPayload, userSignature, accountId, network}) => {}
+    userReturnCallback: ({signedPayload, userSignature, accountId, network}, userPublicKey) => {}
 })
 ```
 

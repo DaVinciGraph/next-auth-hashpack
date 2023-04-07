@@ -23,7 +23,7 @@ export interface ICheckOriginalData {
 }
 
 export interface HashpackOptions {
-    userReturnCallback: (credentials: HashpackCredentialInputData) => Awaitable<User | null>,
+    userReturnCallback: (credentials: HashpackCredentialInputData, userPublicKey?: string) => Awaitable<User | null>,
     publicKey: string,
     mirrorNodeAccountInfoURL?: {
         testnet: string,
@@ -135,7 +135,7 @@ export const hashpackProvider = ({
             const clientVerified = verifyData(signedPayload, userAccountPublicKey, Uint8Array.from(Object.values(userSignature)));
 
             if (serverVerified && clientVerified) {
-                return userReturnCallback(credentials)
+                return userReturnCallback(credentials, userAccountPublicKey)
             }
 
             throw new Error("Authentication Failed")

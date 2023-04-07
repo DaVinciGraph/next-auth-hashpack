@@ -1,7 +1,7 @@
 {
   "name": "next-auth-hashpack",
   "description": "Authenticate with Hashpack wallet using NextAuthJs library.",
-  "version": "1.1.1",
+  "version": "1.1.4",
   "author": {
     "name": "DaVinciGraph",
     "url": "https://davincigraph.io"
@@ -27,16 +27,16 @@
   "scripts": {},
   "dependencies": {
     "@emotion/react": "^11.10.6",
-    "@hashgraph/sdk": "^2.22.0",
+    "@hashgraph/sdk": "^2.24.0",
     "hashconnect": "^0.2.4"
   },
   "devDependencies": {
-    "typescript": "^4.9.5",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
     "next": "^13.2.3",
     "next-auth": "^4.20.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "typescript": "^4.9.5"
   }
 }
