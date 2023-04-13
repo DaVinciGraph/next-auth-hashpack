@@ -73,7 +73,17 @@ hashpackProvider({
 <br>
 
 **publicKey** <br>
-**_`mandatory`_** the server's hedera hashgraph account public key, this key would be used to verify the signed data.
+**_`mandatory`_** the server's hedera hashgraph account public key, this key would be used to verify the signed data. after version 1.1.6 public key for different network is supported.
+
+```javascript pages/api/auth/[...nextauth].ts
+hashpackProvider({
+    ...
+    publicKey: {
+        testnet: "server public key for testnet",
+        mainnet: "server public key for mainnet"
+    }
+})
+```
 
 <br>
 

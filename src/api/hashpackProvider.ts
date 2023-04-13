@@ -22,14 +22,16 @@ export interface ICheckOriginalData {
     originalData: any
 }
 
+export interface networkRelatedObject {
+    testnet: string,
+    mainnet: string,
+    previewnet?: string
+}
+
 export interface HashpackOptions {
     userReturnCallback: (credentials: HashpackCredentialInputData, userPublicKey?: string) => Awaitable<User | null>,
-    publicKey: string,
-    mirrorNodeAccountInfoURL?: {
-        testnet: string,
-        mainnet: string,
-        previewnet: string
-    },
+    publicKey: string | networkRelatedObject,
+    mirrorNodeAccountInfoURL?: networkRelatedObject,
     getUserPublicKey?: ({ accountId, network }: IGetUserPublicKey) => string | Promise<string>,
     checkOriginalData?: ({ accountId, network, originalData }: ICheckOriginalData) => boolean | Promise<boolean>
 }
@@ -131,6 +133,13 @@ export const hashpackProvider = ({
                 throw new Error("User public key is missing");
             }
 
+            if (serverPublicKeyIsNetworkRelated(publicKey)) {
+                publicKey = publicKey[network] as string;
+                if (!publicKey) {
+                    throw new Error(`public key cannot be red from config.`);
+                }
+            }
+
             const serverVerified = verifyData(signedPayload.originalPayload, publicKey, Uint8Array.from(Object.values(signedPayload.serverSignature)));
             const clientVerified = verifyData(signedPayload, userAccountPublicKey, Uint8Array.from(Object.values(userSignature)));
 
@@ -141,6 +150,10 @@ export const hashpackProvider = ({
             throw new Error("Authentication Failed")
         }
     })
+}
+
+const serverPublicKeyIsNetworkRelated = (serverPublicKey: string | networkRelatedObject): serverPublicKey is networkRelatedObject => {
+    return typeof serverPublicKey !== 'string'
 }
 
 const verifyData = (data: object, publicKey: string, signature: Uint8Array): boolean => {
