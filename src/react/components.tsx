@@ -1,5 +1,5 @@
 import * as React from "react";
-import { HashConnect } from "hashconnect";
+import { HashConnect } from "hashconnect/dist/hashconnect";
 import { ClientSafeProvider, getCsrfToken, getProviders, signIn, SignInOptions, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { css } from "@emotion/react";
@@ -28,6 +28,7 @@ export interface IAuthHashPackButton extends IAuthHashConnectIntegration {
     id?: string,
     className?: string,
     style?: any
+    onError?: (error: string) => void
 }
 
 type HederaNetworkType = 'mainnet' | 'testnet' | 'previewnet'
@@ -116,7 +117,7 @@ export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTop
 
 
 export const HashpackButton = (props: IAuthHashPackButton) => {
-    const { hashConnect, network, hashConnectTopic, hashConnectState, pairedAccountId, children, signInOptions, authInitializerApiRoute } = props;
+    const { hashConnect, network, hashConnectTopic, hashConnectState, pairedAccountId, children, signInOptions, authInitializerApiRoute, onError } = props;
     const { authenticate, error } = useHashpackAuthentication({ hashConnect, network, hashConnectTopic, pairedAccountId, signInOptions: signInOptions!, authInitializerApiRoute });
 
     const [pairedHere, setPairedHere] = React.useState(false);
@@ -136,6 +137,10 @@ export const HashpackButton = (props: IAuthHashPackButton) => {
     React.useEffect(() => {
         if (hashConnectState === 'Paired' && pairedHere) authenticate();
     }, [hashConnectState]);
+
+    React.useEffect(() => {
+        if (onError && error) onError(error);
+    }, [error]);
 
     return <>
         <span><button
@@ -172,7 +177,7 @@ export const HashpackButton = (props: IAuthHashPackButton) => {
 
             }
         </button>
-            {error && <div style={{ color: "#ff4747", paddingBottom: "5px" }}>{error}</div>}
+            {error && !onError ? <div style={{ color: "#ff4747", paddingBottom: "5px" }}>{error}</div> : null}
         </span>
     </>
 }

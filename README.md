@@ -189,11 +189,19 @@ The previous functionalities described are responsible for handling the authenti
 To connect to hashpack at any time, we must instantiate HashConnect and hold some of its properties as states. next-auth-hashpack requires 3 entries to interact with hashpack. the `hashConnect instance`, `hedera network`, `hashConnect topic`, `hashConnect state`, and the state holding the paired or to-be-paired user's `account id`.
 
 > 💡 Notice that another prerequisite is to have next-auth session context set up.
+<br>
+
+> 💡 Import HashConnect instance from this path:
+```javascript
+import { HashConnect } from "hashconnect/dist/hashconnect"; 
+```
 
 <br>
 
 ## **useHashpackAuthentication** hook
 returns `authenticate` function & `error` state. when `authenticate` function is called it initiate the hashpack authentication flow, for example by clicking on a button.
+
+
 ```javascript 
 useHashpackAuthentication(
     hashConnect, // the hashConnect instance 
@@ -245,6 +253,17 @@ import { HashpackButton } from "next-auth-hashpack/dist/react";
     styles="whatever"
     className="whatever"
 > Custom sign in content </HashpackButton>
+```
+
+if you want to handle the authentication error (showing below the button) yourself, give the button an onError callback, it receives the error as its input.
+
+```javascript
+import { HashpackButton } from "next-auth-hashpack/dist/react";
+ <HashpackButton
+    ...
+    onError={(error: string) => console.log(error)}
+    ...
+> Sign in </HashpackButton>
 ```
 
 > 💡 If you need to use this button to show it alongside other providers in your custom way, you need it get the providers from next-auth manually and construct them, otherwise just use `ProvidersCard`.

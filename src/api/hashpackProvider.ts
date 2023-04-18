@@ -59,7 +59,7 @@ export type hashpackCredentialInputs = {
  * config the credential to be used with hashpack wallet
  * 
  * @param userReturnCallback a callback that return verified user
- * @param publicKey Server's Hedera account public key
+ * @param publicKey Server's Hedera account public key, can be an object of publickey for each networks
  * @param mirrorNodeAccountInfoURL  the mirror node api route for  fetching account's info
  * @param getUserPublicKey replace the fetching client user's public key mechanism
  * @param checkOriginalData check the original data
