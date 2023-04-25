@@ -38,7 +38,7 @@ NextAuth({
             userReturnCallback: ({ accountId, network }, userPublicKey) => {
                 return { id: "DavinciGraph", accountId: accountId }
             },
-            publicKey: "ServerAccountPublicKey",
+            privateKey: "ServerAccountPrivateKey",
             mirrorNodeAccountInfoURL: {
                 testnet: 'https://testnet.mirrornode.hedera.com/api/v1/accounts',
                 mainnet: 'https://mainnet-public.mirrornode.hedera.com/api/v1/accounts'
@@ -72,18 +72,21 @@ hashpackProvider({
 
 <br>
 
-**publicKey** <br>
-**_`mandatory`_** the server's hedera hashgraph account public key, this key would be used to verify the signed data. after version 1.1.6 public key for different network is supported.
+**privateKey** <br>
+**_`mandatory`_** the server's hedera hashgraph account private key, this key would be used to generate a publicKey and verify the signed data. after version 1.1.6 private key for different network is supported.
 
 ```javascript pages/api/auth/[...nextauth].ts
 hashpackProvider({
     ...
-    publicKey: {
-        testnet: "server public key for testnet",
-        mainnet: "server public key for mainnet"
+    privateKey: {
+        testnet: "server private key for testnet",
+        mainnet: "server private key for mainnet"
     }
 })
 ```
+
+> 💡 Attention: prior to 1.2.2 we had used publicKey directly but it has some issues with verifying on mainnet. therefore after that we generate the publicKey from this privateKey
+<br>
 
 <br>
 

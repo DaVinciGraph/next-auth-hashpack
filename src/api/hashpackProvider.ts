@@ -1,4 +1,4 @@
-import { PublicKey } from "@hashgraph/sdk";
+import { PrivateKey, PublicKey } from "@hashgraph/sdk";
 import { Awaitable, User } from "next-auth";
 import Credentials, { CredentialsConfig } from "next-auth/providers/credentials";
 
@@ -30,7 +30,7 @@ export interface networkRelatedObject {
 
 export interface HashpackOptions {
     userReturnCallback: (credentials: HashpackCredentialInputData, userPublicKey?: string) => Awaitable<User | null>,
-    publicKey: string | networkRelatedObject,
+    privateKey: string | networkRelatedObject,
     mirrorNodeAccountInfoURL?: networkRelatedObject,
     getUserPublicKey?: ({ accountId, network }: IGetUserPublicKey) => string | Promise<string>,
     checkOriginalData?: ({ accountId, network, originalData }: ICheckOriginalData) => boolean | Promise<boolean>
@@ -59,14 +59,14 @@ export type hashpackCredentialInputs = {
  * config the credential to be used with hashpack wallet
  * 
  * @param userReturnCallback a callback that return verified user
- * @param publicKey Server's Hedera account public key, can be an object of publickey for each networks
+ * @param privateKey Server's Hedera account private key, can be an object of privatekey strings for each networks
  * @param mirrorNodeAccountInfoURL  the mirror node api route for  fetching account's info
  * @param getUserPublicKey replace the fetching client user's public key mechanism
  * @param checkOriginalData check the original data
  */
 export const hashpackProvider = ({
     userReturnCallback,
-    publicKey,
+    privateKey,
     mirrorNodeAccountInfoURL = {
         testnet: 'https://testnet.mirrornode.hedera.com/api/v1/accounts',
         mainnet: 'https://mainnet-public.mirrornode.hedera.com/api/v1/accounts',
@@ -133,14 +133,14 @@ export const hashpackProvider = ({
                 throw new Error("User public key is missing");
             }
 
-            if (serverPublicKeyIsNetworkRelated(publicKey)) {
-                publicKey = publicKey[network] as string;
-                if (!publicKey) {
-                    throw new Error(`public key cannot be red from config.`);
+            if (serverPrivateKeyIsNetworkRelated(privateKey)) {
+                privateKey = privateKey[network] as string;
+                if (!privateKey) {
+                    throw new Error(`Server Internal Error.`);
                 }
             }
 
-            const serverVerified = verifyData(signedPayload.originalPayload, publicKey, Uint8Array.from(Object.values(signedPayload.serverSignature)));
+            const serverVerified = verifyData(signedPayload.originalPayload, PrivateKey.fromString(privateKey).publicKey, Uint8Array.from(Object.values(signedPayload.serverSignature)));
             const clientVerified = verifyData(signedPayload, userAccountPublicKey, Uint8Array.from(Object.values(userSignature)));
 
             if (serverVerified && clientVerified) {
@@ -152,18 +152,22 @@ export const hashpackProvider = ({
     })
 }
 
-const serverPublicKeyIsNetworkRelated = (serverPublicKey: string | networkRelatedObject): serverPublicKey is networkRelatedObject => {
-    return typeof serverPublicKey !== 'string'
-}
-
-const verifyData = (data: object, publicKey: string, signature: Uint8Array): boolean => {
-    const pubKey = PublicKey.fromString(publicKey);
+const verifyData = (data: object, publicKey: string | PublicKey, signature: Uint8Array): boolean => {
+    const pubKey = publicKeyIsString(publicKey) ? PublicKey.fromString(publicKey) : publicKey;
 
     let bytes = new Uint8Array(Buffer.from(JSON.stringify(data)));
 
     let verify = pubKey.verify(bytes, signature);
 
     return verify;
+}
+
+const serverPrivateKeyIsNetworkRelated = (serverPublicKey: string | networkRelatedObject): serverPublicKey is networkRelatedObject => {
+    return typeof serverPublicKey !== 'string'
+}
+
+const publicKeyIsString = (publicKey: string | PublicKey): publicKey is string => {
+    return typeof publicKey === 'string';
 }
 
 const isUint8ArrayCompatible = (data: any) => {

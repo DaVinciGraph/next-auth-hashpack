@@ -39,7 +39,7 @@ export async function authInitializer(req: NextApiRequest, res: NextApiResponse,
         }
 
         const csrfToken = req.headers['x-csrf-token'];
-        if (!csrfToken || req.cookies['next-auth.csrf-token']?.split(/[|%]/)?.[0] !== csrfToken) {
+        if (!csrfToken || (req.cookies['__Host-next-auth.csrf-token'] || req.cookies['next-auth.csrf-token'])?.split(/[|%]/)?.[0] !== csrfToken) {
             throw new Error("Invalid token");
         }
 
