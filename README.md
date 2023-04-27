@@ -50,7 +50,8 @@ NextAuth({
             checkOriginalData: ({accountId, originalData, network}) => {
                 "check the originData you had sent to the user to sign with an external source like database"
                 return true;
-            }
+            },
+            debug: true
         })
     ]
 })
@@ -78,6 +79,18 @@ hashpackProvider({
 ```javascript pages/api/auth/[...nextauth].ts
 hashpackProvider({
     ...
+    privateKey: "server private key",
+
+    //or
+    privateKey: (network) => {
+        if( network === 'mainnet' ){
+            return 'pk for mainnet.'
+        }
+
+        return 'pk for testnet';
+    }
+
+    // or
     privateKey: {
         testnet: "server private key for testnet",
         mainnet: "server private key for mainnet"
@@ -124,6 +137,11 @@ hashpackProvider({
 
 <br>
 
+**debug** <br>
+**_`optional`_** a flag which when true shows the process of running functionalities in the console.
+
+<br>
+
 ## **authInitializer**
 The usual next-auth providers have a similar flow to initiate authentication(since they implement OAuth standard), but with a cryptocurrency wallet this is not available. therefore we need another route, which must be created manually.
 
@@ -138,7 +156,9 @@ export default async function hashpack(req: NextApiRequest, res: NextApiResponse
 
     let data = {
         url: 'https://davincigraph.io', 
-        token: "a randomly generated token"
+        data: {
+            token: "a randomly generated token"
+        }
     };
 
     // optionally you can define a preInitializingCallback and give it to authInitializer.
@@ -148,14 +168,14 @@ export default async function hashpack(req: NextApiRequest, res: NextApiResponse
     }
 
     // return whatever authInitializer return to to prevent stale requests
-    return authInitializer(req, res, accountId, privateKey, data, "testnet", preInitializingCallback);
+    return authInitializer(req, res, accountId, privateKey, data, "testnet", preInitializingCallback, true);
     // the final argument is hedera network, and it accepts either testnet or mainnet
 }
 ```
 
 <br>
 
-as you see, `authInitializer` requires the route `request` and `response`, server's Hedera hashgraph `account Id` and `private key`, and some `data` to be signed by both parts (server & user).
+as you see, `authInitializer` requires the route `request` and `response`, server's Hedera hashgraph `account Id` and `private key`, and some `data` to be signed by both parts (server & user). also a `preInitializingCallback` that would run after validation of the request. debug is also available here.
 
 > 💡 the `pages/api/auth/hashpack.ts` path is not mandatory and the route can be created anywhere needed, the client knows about it in a way which would be explained in the following.
 
@@ -212,7 +232,8 @@ useHashpackAuthentication(
     hashConnectTopic, // hashConnect's connection topic state
     pairedAccountId, // paired or to be paired account id state
     singInOptions, // Optional - next-auth sign-in options
-    authInitializerApiRoute // Optional the route that initialize the authentication, as mentioned above the default path is `pages/api/auth/hashpack.ts`
+    authInitializerApiRoute ,// Optional the route that initialize the authentication, as mentioned above the default path is `pages/api/auth/hashpack.ts`
+    onSuccess // a callback to run when the authentication succeeded
 )
 ```
 
@@ -234,6 +255,9 @@ import { HashpackButton } from "next-auth-hashpack/dist/react";
     pairedAccountId={pairedAccountId}
     signInOptions={signInOptions}
     authInitializerApiRoute={authInitializerApiRoute}
+    onStart={() => {console.log("authentication starts")}}
+    onSuccess={(accountId) => {console.log("successfully signed in")}}
+    onError={(error) => {console.log(error)}}
     id="whatever" // this and the two following can be used for customizing styles
     styles="whatever"
     className="whatever"

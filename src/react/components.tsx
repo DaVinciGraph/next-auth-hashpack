@@ -7,28 +7,30 @@ import { HashConnectConnectionState } from "hashconnect/dist/esm/types";
 
 
 export type AuthenticationResponse = {
-    success: boolean;
-    error?: string;
-    signedPayload?: object;
-    userSignature?: object;
+    success: boolean
+    error?: string
+    signedPayload?: Uint8Array
+    userSignature?: Uint8Array
 };
 
 export interface IAuthHashConnectIntegration {
-    hashConnect: HashConnect,
-    network: HederaNetworkType,
-    hashConnectTopic: string,
+    hashConnect: HashConnect
+    network: HederaNetworkType
+    hashConnectTopic: string
     hashConnectState?: HashConnectConnectionState,
-    pairedAccountId: string,
-    signInOptions?: SignInOptions,
+    pairedAccountId: string
+    signInOptions?: SignInOptions
     authInitializerApiRoute?: string
 }
 
 export interface IAuthHashPackButton extends IAuthHashConnectIntegration {
-    children?: React.ReactNode,
-    id?: string,
-    className?: string,
+    children?: React.ReactNode
+    id?: string
+    className?: string
     style?: any
     onError?: (error: string) => void
+    onStart?: () => void
+    onSuccess?: (accountId?: string) => void
 }
 
 type HederaNetworkType = 'mainnet' | 'testnet' | 'previewnet'
@@ -39,10 +41,11 @@ interface IHashpackAuthenticationHookProps {
     hashConnectTopic: string
     pairedAccountId: string
     signInOptions?: SignInOptions
-    authInitializerApiRoute?: string
+    authInitializerApiRoute?: string,
+    onSuccess?: (accountId?: string) => void
 }
 
-export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTopic, pairedAccountId, signInOptions, authInitializerApiRoute }: IHashpackAuthenticationHookProps) => {
+export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTopic, pairedAccountId, signInOptions, authInitializerApiRoute, onSuccess }: IHashpackAuthenticationHookProps) => {
     const [error, setError] = React.useState('');
     const router = useRouter();
     const authenticate = async (ApiRouteUrl = authInitializerApiRoute ? authInitializerApiRoute : `/api/auth/hashpack`) => {
@@ -53,7 +56,8 @@ export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTop
                 method: "POST",
                 body: JSON.stringify({
                     accountId: pairedAccountId,
-                    network: network
+                    network: network,
+                    csrfToken: csrfToken
                 }),
                 headers: {
                     'Content-Type': 'application/json',
@@ -72,7 +76,7 @@ export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTop
                     throw new Error("Hashpack wallet failed to authenticate");
                 }
 
-                await sign(authenticationResponse);
+                await sign(authenticationResponse, onSuccess);
 
             } else {
                 let err: string;
@@ -93,7 +97,7 @@ export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTop
         }
     }
 
-    const sign = async (authenticationResponse: any) => {
+    const sign = async (authenticationResponse: any, onSuccess?: (accountId?: string) => void) => {
         const signInResponse = await signIn("hashpack", {
             network: network,
             accountId: pairedAccountId,
@@ -105,6 +109,7 @@ export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTop
         });
 
         if (signInResponse?.ok) {
+            if (onSuccess && typeof onSuccess === 'function') onSuccess(pairedAccountId)
             if (signInOptions?.callbackUrl)
                 router.push(signInOptions?.callbackUrl);
         } else {
@@ -117,12 +122,13 @@ export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTop
 
 
 export const HashpackButton = (props: IAuthHashPackButton) => {
-    const { hashConnect, network, hashConnectTopic, hashConnectState, pairedAccountId, children, signInOptions, authInitializerApiRoute, onError } = props;
-    const { authenticate, error } = useHashpackAuthentication({ hashConnect, network, hashConnectTopic, pairedAccountId, signInOptions: signInOptions!, authInitializerApiRoute });
+    const { hashConnect, network, hashConnectTopic, hashConnectState, pairedAccountId, children, signInOptions, authInitializerApiRoute, onStart, onError, onSuccess } = props;
+    const { authenticate, error } = useHashpackAuthentication({ hashConnect, network, hashConnectTopic, pairedAccountId, signInOptions: signInOptions!, authInitializerApiRoute, onSuccess });
 
     const [pairedHere, setPairedHere] = React.useState(false);
 
     const initializeHashpackAuthentication = async () => {
+        if (onStart) onStart();
         if (hashConnectState !== 'Paired') {
             setPairedHere(true);
             hashConnect.connectToLocalWallet();
@@ -131,7 +137,7 @@ export const HashpackButton = (props: IAuthHashPackButton) => {
             setPairedHere(false);
         }
 
-        authenticate();
+        await authenticate();
     }
 
     React.useEffect(() => {

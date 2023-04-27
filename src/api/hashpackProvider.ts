@@ -30,10 +30,11 @@ export interface networkRelatedObject {
 
 export interface HashpackOptions {
     userReturnCallback: (credentials: HashpackCredentialInputData, userPublicKey?: string) => Awaitable<User | null>,
-    privateKey: string | networkRelatedObject,
+    privateKey: string | networkRelatedObject | ((network: HederaNetworkType) => string),
     mirrorNodeAccountInfoURL?: networkRelatedObject,
-    getUserPublicKey?: ({ accountId, network }: IGetUserPublicKey) => string | Promise<string>,
+    getUserPublicKey: (({ accountId, network }: IGetUserPublicKey) => string | Promise<string>) | null,
     checkOriginalData?: ({ accountId, network, originalData }: ICheckOriginalData) => boolean | Promise<boolean>
+    debug: boolean
 }
 
 export type hashpackCredentialInputs = {
@@ -72,8 +73,9 @@ export const hashpackProvider = ({
         mainnet: 'https://mainnet-public.mirrornode.hedera.com/api/v1/accounts',
         previewnet: ""
     },
-    getUserPublicKey,
-    checkOriginalData
+    getUserPublicKey = null,
+    checkOriginalData,
+    debug = false
 }: HashpackOptions): CredentialsConfig<hashpackCredentialInputs> => {
     return Credentials({
         id: "hashpack",
@@ -86,64 +88,99 @@ export const hashpackProvider = ({
         },
         async authorize(credentials: any) {
             let { signedPayload, userSignature, accountId, network } = credentials;
+            debugging(debug, "red credentials: ", credentials);
 
             if (!signedPayload || !userSignature || !accountId || !network) {
+                debugging(debug, "missing credentials ");
                 throw new Error("unable to process your request")
             }
 
             if (!isValidHederaAccount(accountId)) {
+                debugging(debug, "user account was invalid in format.");
                 throw new Error("Hedera Account is not valid.");
             }
 
             if (network !== 'mainnet' && network !== 'testnet' && network !== 'previewnet') {
+                debugging(debug, "hedera account was invalid.");
                 throw new Error("Hedera network is incorrect.");
             }
 
             try {
+                debugging(debug, "convert signedPayload and userSignature to json.");
                 signedPayload = JSON.parse(signedPayload);
                 userSignature = JSON.parse(userSignature);
             } catch (err) {
+                debugging(debug, "one or both of them were invalid.");
                 throw new Error("Invalid Signature");
             }
 
             if (!signedPayload?.originalPayload || !signedPayload?.serverSignature) {
+                debugging(debug, "one or both of them were null or undefined.");
                 throw new Error("Invalid entries");
             }
 
             if (!isUint8ArrayCompatible(signedPayload.serverSignature) || !isUint8ArrayCompatible(userSignature)) {
+                debugging(debug, "one or both of were not a valid Uint8Array.");
                 throw new Error("Invalid Signature");
             }
 
+            debugging(debug, "checking data if present runs.");
             if (checkOriginalData && !checkOriginalData({ accountId, network, originalData: signedPayload?.originalPayload })) {
+                debugging(debug, "originalData returned error.");
                 throw new Error("Invalid Signature");
             }
+            debugging(debug, "originalData passed.");
 
+            debugging(debug, "trying to get user public key.");
             let userAccountPublicKey = '';
-            if (getUserPublicKey) {
+            if (getUserPublicKey !== null && typeof getUserPublicKey === 'function') {
+                debugging(debug, "getting user public key in a custom way");
                 userAccountPublicKey = await getUserPublicKey({ accountId, network });
+                debugging(debug, "result of custom public key getter: ", userAccountPublicKey);
             } else {
+                debugging(debug, "getting user public key from mirror node.");
                 const userAccountInfoResponse = await fetch(`${mirrorNodeAccountInfoURL[network]}/${accountId}`);
                 if (userAccountInfoResponse.ok) {
                     const responseData = await userAccountInfoResponse.json();
                     userAccountPublicKey = responseData?.key?.key;
+                    debugging(debug, "user public key was returned successfully: ", userAccountPublicKey);
                 }
             }
 
             if (!userAccountPublicKey) {
+                debugging(debug, "user public key wasn't present.", userAccountPublicKey);
                 throw new Error("User public key is missing");
             }
 
-            if (serverPrivateKeyIsNetworkRelated(privateKey)) {
-                privateKey = privateKey[network] as string;
-                if (!privateKey) {
+            let pv: null | string | networkRelatedObject = null;
+            if (typeof privateKey === 'function') {
+                debugging(debug, "getting server private Key from a callback.");
+                pv = privateKey(network);
+                debugging(debug, "returned private key: ", truncatePrivateKey(pv));
+            } else if (serverPrivateKeyIsNetworkRelated(privateKey)) {
+                debugging(debug, "getting server private Key from an object.");
+                pv = privateKey[network] as string;
+                if (!pv) {
+                    debugging(debug, "object didn't contained network: ", network);
                     throw new Error(`Server Internal Error.`);
                 }
+                debugging(debug, "returned private key: ", truncatePrivateKey(pv));
+            } else {
+                pv = privateKey;
+                debugging(debug, "private key: ", truncatePrivateKey(pv));
             }
 
-            const serverVerified = verifyData(signedPayload.originalPayload, PrivateKey.fromString(privateKey).publicKey, Uint8Array.from(Object.values(signedPayload.serverSignature)));
+
+            debugging(debug, "verifying validation of signatures.");
+
+            const serverVerified = verifyData(signedPayload.originalPayload, PrivateKey.fromString(pv).publicKey, Uint8Array.from(Object.values(signedPayload.serverSignature)));
+            debugging(debug, "server signature verifying result: ", serverVerified);
+
             const clientVerified = verifyData(signedPayload, userAccountPublicKey, Uint8Array.from(Object.values(userSignature)));
+            debugging(debug, "user signature verifying result: ", clientVerified);
 
             if (serverVerified && clientVerified) {
+                debugging(debug, "successful authorization");
                 return userReturnCallback(credentials, userAccountPublicKey)
             }
 
@@ -186,7 +223,22 @@ const isUint8ArrayCompatible = (data: any) => {
     });
 }
 
+export const debugging = (active: boolean, ...rest: any[]) => {
+    active && console.log(rest);
+}
+
 export function isValidHederaAccount(accountId: string) {
     const regex = /^(\d{1,10}\.){2}\d{1,10}$/;
     return regex.test(accountId);
+}
+
+export const truncatePrivateKey = (privateKey: string): string | false => {
+    if (privateKey.length < 6) {
+        return false;
+    }
+
+    const firstThreeChars = privateKey.slice(0, 3);
+    const lastThreeChars = privateKey.slice(-3);
+
+    return `${firstThreeChars}...${lastThreeChars}`;
 }

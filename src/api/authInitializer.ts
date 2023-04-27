@@ -1,6 +1,6 @@
 import { AccountId, Client, PrivateKey } from "@hashgraph/sdk";
 import { NextApiRequest, NextApiResponse } from "next";
-import { HederaNetworkType, isValidHederaAccount } from "./hashpackProvider";
+import { HederaNetworkType, debugging, isValidHederaAccount, truncatePrivateKey } from "./hashpackProvider";
 
 
 export interface InitializingResponse {
@@ -28,32 +28,45 @@ export type PreInitializingCallback = ({ network, accountId, data }: IPreInitial
  * @param preInitializingCallback runs after validation, receives accountId and optionally original data
  * @returns {Promise<void>}
  */
-export async function authInitializer(req: NextApiRequest, res: NextApiResponse, ServerAccountId: string, ServerPrivateKey: string, data: any, network: HederaNetworkType = "testnet", preInitializingCallback?: PreInitializingCallback): Promise<void> {
+export async function authInitializer(req: NextApiRequest, res: NextApiResponse, ServerAccountId: string, ServerPrivateKey: string, data: any, network: HederaNetworkType = "testnet", preInitializingCallback?: PreInitializingCallback, debug: boolean = false): Promise<void> {
     try {
         if (req.method !== 'POST') {
+            debugging(debug, "method wasn't allowed: ", req.method);
             return res.status(405).send(`Method not allowed.`);
         }
 
         if (!req.body?.accountId || !isValidHederaAccount(req.body?.accountId)) {
+            debugging(debug, "Invalid hedera account ID: ", req.body?.accountId);
             throw new Error("Invalid hedera account ID.");
         }
 
-        const csrfToken = req.headers['x-csrf-token'];
-        if (!csrfToken || (req.cookies['__Host-next-auth.csrf-token'] || req.cookies['next-auth.csrf-token'])?.split(/[|%]/)?.[0] !== csrfToken) {
+        debugging(debug, "reading csrt-token", req.body?.accountId);
+        const csrfToken = req.headers['x-csrf-token'] || req.body?.csrfToken;
+        const csrfCookie = req.cookies['__Host-next-auth.csrf-token'] || req.cookies['next-auth.csrf-token'];
+        debugging(debug, "crf token: ", csrfToken, " csrf cookie: ", csrfCookie);
+
+        if (!csrfToken || (csrfCookie)?.split(/[|%]/)?.[0] !== csrfToken) {
+            debugging(debug, "crf token and cookie didn't match.");
             throw new Error("Invalid token");
         }
 
         if (preInitializingCallback) {
+            debugging(debug, "preInitializingCallback is about to run");
             await preInitializingCallback({ accountId: req.body.accountId, network, data })
+            debugging(debug, "preInitializingCallback ran");
         }
 
         const client = network === 'testnet' ? Client.forTestnet() : Client.forMainnet();
-        // if (typeof privateKey === 'string') {
+        debugging(debug, "hedera client was set for network: ", network);
+
         const pk = PrivateKey.fromString(ServerPrivateKey)
-        // }
+        debugging(debug, "Private key instance was created from string", truncatePrivateKey(ServerPrivateKey));
+
         client.setOperator(AccountId.fromString(ServerAccountId), pk);
+        debugging(debug, "hedera client operator was set: ", ServerAccountId);
 
         let bytes = new Uint8Array(Buffer.from(JSON.stringify(data)));
+        debugging(debug, "bytes was generated: ", bytes);
 
         let signature = pk.sign(bytes);
 
@@ -62,6 +75,8 @@ export async function authInitializer(req: NextApiRequest, res: NextApiResponse,
             serverSigningAccount: ServerAccountId,
             payload: data,
         }
+
+        debugging(debug, "response was sent: ", responseDate);
 
         return res.status(200).send(JSON.stringify(responseDate));
     } catch (err: any) {
