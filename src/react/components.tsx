@@ -50,8 +50,8 @@ export const useHashpackAuthentication = ({ hashConnect, network, hashConnectTop
     const router = useRouter();
     const authenticate = async (ApiRouteUrl = authInitializerApiRoute ? authInitializerApiRoute : `/api/auth/hashpack`) => {
         try {
-            const csrfToken = await getCsrfToken();
             setError('');
+            const csrfToken = await getCsrfToken();
             const transactionResponse = await fetch(ApiRouteUrl, {
                 method: "POST",
                 body: JSON.stringify({

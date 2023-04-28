@@ -32,9 +32,9 @@ export interface HashpackOptions {
     userReturnCallback: (credentials: HashpackCredentialInputData, userPublicKey?: string) => Awaitable<User | null>,
     privateKey: string | networkRelatedObject | ((network: HederaNetworkType) => string),
     mirrorNodeAccountInfoURL?: networkRelatedObject,
-    getUserPublicKey: (({ accountId, network }: IGetUserPublicKey) => string | Promise<string>) | null,
+    getUserPublicKey?: (({ accountId, network }: IGetUserPublicKey) => string | Promise<string>) | null,
     checkOriginalData?: ({ accountId, network, originalData }: ICheckOriginalData) => boolean | Promise<boolean>
-    debug: boolean
+    debug?: boolean
 }
 
 export type hashpackCredentialInputs = {
@@ -138,7 +138,7 @@ export const hashpackProvider = ({
                 userAccountPublicKey = await getUserPublicKey({ accountId, network });
                 debugging(debug, "result of custom public key getter: ", userAccountPublicKey);
             } else {
-                debugging(debug, "getting user public key from mirror node.");
+                debugging(debug, "getting user public key from mirror node: ", mirrorNodeAccountInfoURL[network], mirrorNodeAccountInfoURL, network);
                 const userAccountInfoResponse = await fetch(`${mirrorNodeAccountInfoURL[network]}/${accountId}`);
                 if (userAccountInfoResponse.ok) {
                     const responseData = await userAccountInfoResponse.json();
@@ -224,7 +224,9 @@ const isUint8ArrayCompatible = (data: any) => {
 }
 
 export const debugging = (active: boolean, ...rest: any[]) => {
-    active && console.log(rest);
+    if (active) {
+        console.log(`${new Date().toISOString()}: `, ...rest);
+    }
 }
 
 export function isValidHederaAccount(accountId: string) {
