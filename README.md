@@ -216,7 +216,7 @@ To connect to hashpack at any time, we must instantiate HashConnect and hold som
 
 > 💡 Import HashConnect instance from this path:
 ```javascript
-import { HashConnect } from "hashconnect/dist/hashconnect"; 
+import { HashConnect } from "hashconnect/dist/esm/hashconnect"; 
 ```
 
 <br>

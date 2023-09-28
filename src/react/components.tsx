@@ -1,5 +1,5 @@
 import * as React from "react";
-import { HashConnect } from "hashconnect/dist/hashconnect";
+import { HashConnect } from "hashconnect/dist/esm/hashconnect";
 import { ClientSafeProvider, getCsrfToken, getProviders, signIn, SignInOptions, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { css } from "@emotion/react";
