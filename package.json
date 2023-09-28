@@ -24,7 +24,9 @@
     "next js",
     "next auth"
   ],
-  "scripts": {},
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "@emotion/react": "^11.10.6",
     "@hashgraph/sdk": "^2.24.0",
